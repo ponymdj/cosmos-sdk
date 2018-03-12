@@ -100,6 +100,8 @@ func handleDepositMsg(ctx sdk.Context, gm GovernanceMapper, msg DepositMsg) sdk.
 		activateVotingPeriod(ctx, gm)
 	}
 
+	gm.setProposal(ctx, msg.Proposal)
+
 	return sdk.Result{} // TODO
 }
 
@@ -174,6 +176,8 @@ func handleVoteMsg(ctx sdk.Context, ck CoinKeeper, msg VoteMsg) sdk.Result {
 
 		existingVote.Option = msg.Option
 	}
+
+	gm.setProposal(ctx, msg.Proposal)
 
 	return sdk.Result{} // TODO
 }

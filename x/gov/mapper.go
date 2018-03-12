@@ -10,9 +10,7 @@ type governanceMapper struct {
 	ck bank.CoinKeeper
 
 	// The (unexposed) keys used to access the stores from the Context.
-	proposalStoreKey      sdk.StoreKey
-	validatorInfoStoreKey sdk.StoreKey
-	votesStoreKey         sdk.StoreKey
+	proposalStoreKey sdk.StoreKey
 
 	// The wire codec for binary encoding/decoding of accounts.
 	cdc *wire.Codec
@@ -21,10 +19,10 @@ type governanceMapper struct {
 // NewGovernanceMapper returns a mapper that uses go-wire to (binary) encode and decode gov types.
 func NewGovernanceMapper(key sdk.StoreKey, ck bank.CoinKeeper) accountMapper {
 	cdc := wire.NewCodec()
-	return accountMapper{
-		key: key,
-		ck:  ck,
-		cdc: cdc,
+	return governanceMapper{
+		proposalStoreKey: key,
+		ck:               ck,
+		cdc:              cdc,
 	}
 }
 
@@ -59,67 +57,6 @@ func (gm governanceMapper) SetProposal(ctx sdk.Context, proposal Proposal) {
 	store := ctx.KVStore(gm.proposalStoreKey)
 
 	bz, err := gm.cdc.MarshalBinary(proposal)
-	if err != nil {
-		panic(err)
-	}
-
-	store.Set(proposalId, bz)
-}
-
-func (gm governanceMapper) GetValidatorInfo(ctx sdk.Context, proposalId int64, validatorAddr crypto.address) sdk.Account {
-	store := ctx.KVStore(gm.validatorInfoStoreKey)
-
-	bz := store.Get(proposalId)
-	if bz == nil {
-		return nil
-	}
-
-	vote := &Vote{}
-	err := gm.cdc.UnmarshalBinary(bz, vote)
-	if err != nil {
-		panic(err)
-	}
-
-	return vote
-}
-
-// Implements sdk.AccountMapper.
-func (gm governanceMapper) SetVote(ctx sdk.Context, vote Vote) {
-	proposalId := proposal.ProposalId
-	store := ctx.KVStore(gm.votesStoreKey)
-
-	bz, err := gm.cdc.MarshalBinary(vote)
-	if err != nil {
-		panic(err)
-	}
-
-	store.Set(proposalId, bz)
-}
-
-func (gm governanceMapper) GetVote(ctx sdk.Context, proposalId int64, voter crypto.address) sdk.Account {
-	store := ctx.KVStore(gm.votesStoreKey)
-
-	bz := store.Get(proposalId)
-	if bz == nil {
-		return nil
-	}
-
-	vote := &Vote{}
-
-	err := gm.cdc.UnmarshalBinary(bz, vote)
-	if err != nil {
-		panic(err)
-	}
-
-	return vote
-}
-
-// Implements sdk.AccountMapper.
-func (gm governanceMapper) SetVote(ctx sdk.Context, vote Vote) {
-	proposalId := proposal.ProposalId
-	store := ctx.KVStore(am.votesStoreKey)
-
-	bz, err := gm.cdc.MarshalBinary(vote)
 	if err != nil {
 		panic(err)
 	}
@@ -179,11 +116,17 @@ func (gm governanceMapper) setProposalQueue(ctx sdk.Context, proposalQueue Propo
 
 func (gm governanceMapper) ProposalQueuePeek(ctx sdk.Context) Proposal {
 	proposalQueue := gm.getProposalQueue(ctx)
+	if len(proposalQueue) == 0 {
+		return nil
+	}
 	return gm.GetProposal(ctx, proposalQueue[0])
 }
 
 func (gm governanceMapper) ProposalQueuePop(ctx sdk.Context) Proposal {
 	proposalQueue := gm.getProposalQueue(ctx)
+	if len(proposalQueue) == 0 {
+		return nil
+	}
 	frontElement, proposalQueue = proposalQueue[0], proposalQueue[1:]
 	gm.setProposalQueue(ctx, proposalQueue)
 	return gm.GetProposal(ctx, frontElement)
