@@ -15,7 +15,7 @@ type SubmitProposalMsg struct {
 	Description    string         //  Description of the proposal
 	ProposalType   string         //  Type of proposal. Initial set {PlainTextProposal, SoftwareUpgradeProposal}
 	Proposer       crypto.address //  Address of the proposer
-	InitialDeposit int64          //  Initial deposit paid by sender. Must be strictly positive.
+	InitialDeposit sdk.Coins      //  Initial deposit paid by sender. Must be strictly positive.
 }
 
 func NewSubmitProposalMsg(title string, description string, proposalType string, initialDeposit int64) SendMsg {
@@ -28,11 +28,29 @@ func NewSubmitProposalMsg(title string, description string, proposalType string,
 }
 
 // Implements Msg.
-func (msg SubmitProposalMsg) Type() string { return "gov" } // TODO: "gov/submitproposal"
+func (msg SubmitProposalMsg) Type() string { return "gov" }
 
 // Implements Msg.
 func (msg SubmitProposalMsg) ValidateBasic() sdk.Error {
-	// TODO: Add validation logic
+
+	if len(msg.Title) == 0 {
+		return ErrInvalidAttribute(msg.Title) // TODO: Proper Error
+	}
+	if len(msg.Description) == 0 {
+		return ErrInvalidAttribute(msg.Description) // TODO: Proper Error
+	}
+	if len(msg.ProposalType) == 0 {
+		return ErrInvalidAttribute(msg.ProposalType) // TODO: Proper Error
+	}
+	if len(msg.Proposer) == 0 {
+		return ErrInvalidAddress(msg.Proposer.String())
+	}
+	if !msg.Amount.IsValid() {
+		return ErrInvalidCoins(msg.Amount.String())
+	}
+	if !msg.Amount.IsPositive() {
+		return ErrInvalidCoins(msg.Amount.String())
+	}
 	return nil
 }
 
@@ -56,9 +74,5 @@ func (msg SubmitProposalMsg) GetSignBytes() []byte {
 
 // Implements Msg.
 func (msg SendMsg) GetSigners() []crypto.Address {
-	addrs := make([]crypto.Address, len(msg.Inputs))
-	for i, in := range msg.Inputs {
-		addrs[i] = in.Address
-	}
-	return addrs
+	return []crypto.Address{msg.Proposer}
 }

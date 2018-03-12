@@ -27,11 +27,11 @@ func (msg DepositMsg) ValidateBasic() sdk.Error {
 	if len(msg.Depositer) == 0 {
 		return ErrInvalidAddress(msg.Depositer.String())
 	}
-	if !in.Coins.IsValid() {
-		return ErrInvalidCoins(in.Coins.String())
+	if !msg.Amount.IsValid() {
+		return ErrInvalidCoins(msg.Amount.String())
 	}
-	if !in.Coins.IsPositive() {
-		return ErrInvalidCoins(in.Coins.String())
+	if !msg.Amount.IsPositive() {
+		return ErrInvalidCoins(msg.Amount.String())
 	}
 	return nil
 }
@@ -56,5 +56,5 @@ func (msg SubmitProposalMsg) GetSignBytes() []byte {
 
 // Implements Msg.
 func (msg SubmitProposalMsg) GetSigners() []crypto.Address {
-	return [1]crypto.Address{msg.Depositer}
+	return []crypto.Address{msg.Depositer}
 }
