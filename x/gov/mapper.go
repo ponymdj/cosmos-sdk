@@ -98,12 +98,14 @@ func (gm governanceMapper) SetVote(ctx sdk.Context, vote Vote) {
 
 func (gm governanceMapper) GetVote(ctx sdk.Context, proposalId int64, voter crypto.address) sdk.Account {
 	store := ctx.KVStore(gm.votesStoreKey)
+
 	bz := store.Get(proposalId)
 	if bz == nil {
 		return nil
 	}
 
 	vote := &Vote{}
+
 	err := gm.cdc.UnmarshalBinary(bz, vote)
 	if err != nil {
 		panic(err)

@@ -75,6 +75,7 @@ func handleDepositMsg(ctx sdk.Context, gm GovernanceMapper, msg DepositMsg) sdk.
 	}
 
 	proposal := gm.getProposal(ctx, msg.ProposalId)
+
 	if proposal == nil {
 		return nil // TODO: Return proper Error
 	}
@@ -196,5 +197,4 @@ func (proposal Proposal) activateVotingPeriod(ctx sdk.Context, gm GovernanceMapp
 	}
 
 	gm.ProposalQueuePush(ctx, proposal)
-
 }

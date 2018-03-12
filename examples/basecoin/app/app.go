@@ -4,14 +4,14 @@ import (
 	"encoding/json"
 
 	abci "github.com/tendermint/abci/types"
-	crypto "github.com/tendermint/go-crypto"
-	"github.com/tendermint/go-wire"
+	oldwire "github.com/tendermint/go-wire"
 	cmn "github.com/tendermint/tmlibs/common"
 	dbm "github.com/tendermint/tmlibs/db"
 	"github.com/tendermint/tmlibs/log"
 
 	bam "github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/wire"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 
@@ -40,7 +40,7 @@ func NewBasecoinApp(logger log.Logger, db dbm.DB) *BasecoinApp {
 	// create your application object
 	var app = &BasecoinApp{
 		BaseApp:         bam.NewBaseApp(appName, logger, db),
-		cdc:             MakeTxCodec(),
+		cdc:             MakeCodec(),
 		capKeyMainStore: sdk.NewKVStoreKey("main"),
 		capKeyIBCStore:  sdk.NewKVStoreKey("ibc"),
 	}
@@ -53,13 +53,16 @@ func NewBasecoinApp(logger log.Logger, db dbm.DB) *BasecoinApp {
 
 	// add handlers
 	coinKeeper := bank.NewCoinKeeper(app.accountMapper)
-	app.Router().AddRoute("bank", bank.NewHandler(coinKeeper))
-	app.Router().AddRoute("sketchy", sketchy.NewHandler())
+	app.Router().
+		AddRoute("bank", bank.NewHandler(coinKeeper)).
+		AddRoute("sketchy", sketchy.NewHandler())
 
 	// initialize BaseApp
 	app.SetTxDecoder(app.txDecoder)
 	app.SetInitChainer(app.initChainer)
-	app.MountStoresIAVL(app.capKeyMainStore, app.capKeyIBCStore)
+	// TODO: mounting multiple stores is broken
+	// https://github.com/cosmos/cosmos-sdk/issues/532
+	app.MountStoresIAVL(app.capKeyMainStore) // , app.capKeyIBCStore)
 	app.SetAnteHandler(auth.NewAnteHandler(app.accountMapper))
 	err := app.LoadLatestVersion(app.capKeyMainStore)
 	if err != nil {
@@ -70,11 +73,34 @@ func NewBasecoinApp(logger log.Logger, db dbm.DB) *BasecoinApp {
 }
 
 // custom tx codec
-func MakeTxCodec() *wire.Codec {
+func MakeCodec() *wire.Codec {
+
+	// XXX: Using old wire for now :)
+	const (
+		msgTypeSend  = 0x1
+		msgTypeIssue = 0x2
+	)
+	var _ = oldwire.RegisterInterface(
+		struct{ sdk.Msg }{},
+		oldwire.ConcreteType{bank.SendMsg{}, msgTypeSend},
+		oldwire.ConcreteType{bank.IssueMsg{}, msgTypeIssue},
+	)
+
+	const (
+		accTypeApp = 0x1
+	)
+	var _ = oldwire.RegisterInterface(
+		struct{ sdk.Account }{},
+		oldwire.ConcreteType{&types.AppAccount{}, accTypeApp},
+	)
+
 	cdc := wire.NewCodec()
-	crypto.RegisterWire(cdc) // Register crypto.[PubKey,PrivKey,Signature] types.
-	bank.RegisterWire(cdc)   // Register bank.[SendMsg,IssueMsg] types.
+	// TODO: use new go-wire
+	// cdc.RegisterInterface((*sdk.Msg)(nil), nil)
+	// bank.RegisterWire(cdc)   // Register bank.[SendMsg,IssueMsg] types.
+	// crypto.RegisterWire(cdc) // Register crypto.[PubKey,PrivKey,Signature] types.
 	return cdc
+
 }
 
 // custom logic for transaction decoding

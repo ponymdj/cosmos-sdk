@@ -2,8 +2,8 @@ package types
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/wire"
 	"github.com/cosmos/cosmos-sdk/x/auth"
-	crypto "github.com/tendermint/go-crypto"
 )
 
 var _ sdk.Account = (*AppAccount)(nil)
@@ -15,12 +15,21 @@ var _ sdk.Account = (*AppAccount)(nil)
 // auth.AccountStore uses the flexible go-wire library.
 type AppAccount struct {
 	auth.BaseAccount
-	Name string
+	Name string `json:"name"`
 }
 
 // nolint
 func (acc AppAccount) GetName() string      { return acc.Name }
 func (acc *AppAccount) SetName(name string) { acc.Name = name }
+
+// Get the ParseAccount function for the custom AppAccount
+func GetParseAccount(cdc *wire.Codec) sdk.ParseAccount {
+	return func(accBytes []byte) (res sdk.Account, err error) {
+		acct := new(AppAccount)
+		err = cdc.UnmarshalBinary(accBytes, &acct)
+		return acct, err
+	}
+}
 
 //___________________________________________________________________________________
 
@@ -31,9 +40,9 @@ type GenesisState struct {
 
 // GenesisAccount doesn't need pubkey or sequence
 type GenesisAccount struct {
-	Name    string         `json:"name"`
-	Address crypto.Address `json:"address"`
-	Coins   sdk.Coins      `json:"coins"`
+	Name    string      `json:"name"`
+	Address sdk.Address `json:"address"`
+	Coins   sdk.Coins   `json:"coins"`
 }
 
 func NewGenesisAccount(aa *AppAccount) *GenesisAccount {
