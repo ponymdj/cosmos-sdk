@@ -5,7 +5,7 @@ type Msg interface {
 
 	// Return the message type.
 	// Must be alphanumeric or empty.
-	MsgType() string
+	Type() string
 
 	// Get some property of the Msg.
 	Get(key interface{}) (value interface{})
