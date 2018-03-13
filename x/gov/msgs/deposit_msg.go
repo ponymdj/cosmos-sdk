@@ -6,14 +6,14 @@ import (
 )
 
 type DepositMsg struct {
-	ProposalId int64          `json:"proposal_id"` // ID of the proposal
+	ProposalID int64          `json:"proposal_id"` // ID of the proposal
 	Depositer  crypto.address `json:"depositer"`   // Address of the depositer
 	Amount     sdk.Coins      `json:"amount"`      // Coins to add to the proposal's deposit
 }
 
-func NewDepositMsgMsg(proposalId int64, depositer crypto.address, amount sdk.Coins) DepositMsg {
+func NewDepositMsgMsg(proposalID int64, depositer crypto.address, amount sdk.Coins) DepositMsg {
 	return DepositMsg{
-		ProposalId: proposalId,
+		ProposalID: proposalID,
 		Depositer:  depositer,
 		Amount:     Amount,
 	}

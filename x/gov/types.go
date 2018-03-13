@@ -12,7 +12,7 @@ type Vote struct {
 
 // Proposal
 type Proposal struct {
-	ProposalId   int64     `json:"proposal_id"`   //  ID of the proposal
+	ProposalID   int64     `json:"proposal_id"`   //  ID of the proposal
 	Title        string    `json:"title"`         //  Title of the proposal
 	Description  string    `json:"description"`   //  Description of the proposal
 	ProposalType string    `json:"proposal_type"` //  Type of proposal. Initial set {PlainTextProposal, SoftwareUpgradeProposal}
@@ -87,7 +87,7 @@ type Deposit struct {
 }
 
 type ValidatorGovInfo struct {
-	ProposalId      int64          //  Id of the Proposal this validator
+	ProposalID      int64          //  Id of the Proposal this validator
 	ValidatorAddr   crypto.address //  Address of the validator
 	InitVotingPower int64          //  Voting power of validator when proposal enters voting period
 	Minus           int64          //  Minus of validator, used to compute validator's voting power

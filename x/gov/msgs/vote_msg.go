@@ -13,7 +13,7 @@ type VoteMsg struct {
 	Option     string         //  option from OptionSet chosen by the voter
 }
 
-func NewVoteMsg(voter crypto.address, proposalId int64, option string) SendMsg {
+func NewVoteMsg(voter crypto.address, proposalID int64, option string) SendMsg {
 	return VoteMsg{
 		Voter:      voter,
 		ProposalID: proposalID,
@@ -37,7 +37,7 @@ func (msg VoteMsg) ValidateBasic() sdk.Error {
 }
 
 func (msg VoteMsg) String() string {
-	return fmt.Sprintf("VoteMsg{%v - %v}", msg.ProposalId, msg.Option)
+	return fmt.Sprintf("VoteMsg{%v - %v}", msg.ProposalID, msg.Option)
 }
 
 // Implements Msg.

@@ -74,14 +74,14 @@ func handleDepositMsg(ctx sdk.Context, gm GovernanceMapper, msg DepositMsg) sdk.
 		return err.Result()
 	}
 
-	proposal := gm.getProposal(ctx, msg.ProposalId)
+	proposal := gm.getProposal(ctx, msg.ProposalID)
 
 	if proposal == nil {
-		return nil // TODO: Return proper Error
+		return ErrUnknownProposal(proposalId).Result() // TODO: Return proper Error
 	}
 
 	if proposal.isActive() {
-		return nil // TODO: Return proper Error
+		return ErrAlreadyActiveProposal(proposalId).Result() // TODO: Return proper Error
 	}
 
 	if ctx.isCheckTx() {
@@ -108,30 +108,26 @@ func handleDepositMsg(ctx sdk.Context, gm GovernanceMapper, msg DepositMsg) sdk.
 // Handle SendMsg.
 func handleVoteMsg(ctx sdk.Context, ck CoinKeeper, msg VoteMsg) sdk.Result {
 
-	proposal := gm.getProposal(ctx, msg.ProposalId)
+	proposal := gm.getProposal(ctx, msg.ProposalID)
 	if proposal == nil {
-		return nil // TODO: Return proper Error
+		return ErrUnknownProposal(proposalId).Result() // TODO: Return proper Error
 	}
 
-	if !proposal.isActive() {
-		return nil // TODO: Return proper Error
-	}
-
-	if ctx.BlockHeight() > proposal.VotingStartBlock+proposal.Procedure.VotingPeriod {
-		return nil // TODO: Return proper Error
+	if !proposal.isActive() || ctx.BlockHeight() > proposal.VotingStartBlock+proposal.Procedure.VotingPeriod {
+		return ErrInactiveProposal(proposalId).Result() // TODO: Return proper Error
 	}
 
 	validatorGovInfo := proposal.getValidatorGovInfo(msg.Voter)
 
-	delegatedTo := gm.sm.getDelegations(ctx, msg.Voter) // TODO: Get list validators that an address is delegated to
 	// Need to finalize interface to staking mapper for delegatedTo. Makes assumption from here on out.
+	delegatedTo := gm.sm.getDelegations(ctx, msg.Voter) // TODO: Get list validators that an address is delegated to
 
 	if validatarGovInfo == nil && len(delegatedTo) == 0 {
-		return nil // TODO: Return proper Error
+		return ErrAddressNotStaked(msg.Voter).Result() // TODO: Return proper Error
 	}
 
 	if proposal.VotingStartBlock <= gm.sm.getLastDelationChangeBlock(msg.Voter) { // TODO: Get last block in which voter bonded or unbonded
-		return nil // TODO: Return proper Error
+		return ErrAddressChangedDelegation(msg.Voter).Result() // TODO: Return proper Error
 	}
 
 	if ctx.isCheckTx() {
@@ -141,7 +137,7 @@ func handleVoteMsg(ctx sdk.Context, ck CoinKeeper, msg VoteMsg) sdk.Result {
 	existingVote := proposal.getVote(msg.voter)
 
 	if existingVote == nil {
-		proposal.Votes = append(proposal.Votes, Vote{Voter: msg.Voter, ProposalID: msg.ProposalId, Option: msg.Option})
+		proposal.Votes = append(proposal.Votes, Vote{Voter: msg.Voter, ProposalID: msg.ProposalID, Option: msg.Option})
 
 		if validatorGovInfo != nil {
 			voteWeight := validatorGovInfo.InitVotingPower - validatorGovInfo.Minus
@@ -190,7 +186,7 @@ func (proposal Proposal) activateVotingPeriod(ctx sdk.Context, gm GovernanceMapp
 
 	for index, validator := range validatorList {
 		validatorGovInfo = ValidatorGovInfo{
-			ProposalId:      proposal.ProposalID,
+			ProposalID:      proposal.ProposalID,
 			ValidatorAddr:   validator.address,
 			InitVotingPower: gm.sm.getVotingPower(validator), // TODO: Get voting power of each validator from staking module
 			Minus:           0,

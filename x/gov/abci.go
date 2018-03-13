@@ -17,7 +17,7 @@ func checkProposal(ctx sdk.Context, gm governanceMapper) {
 	// // Urgent proposal accepted
 	// if proposal.Votes.YesVotes/proposal.InitTotalVotingPower >= 2/3 {
 	// 	gm.PopProposalQueue(ctx)
-	// 	refund(ctx, gm, proposalId, proposal)
+	// 	refund(ctx, gm, proposalID, proposal)
 	// 	return checkProposal()
 	// }
 

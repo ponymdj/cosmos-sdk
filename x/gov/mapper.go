@@ -35,9 +35,9 @@ func (gm governanceMapper) WireCodec() *wire.Codec {
 	return gm.cdc
 }
 
-func (gm governanceMapper) GetProposal(ctx sdk.Context, proposalId int64) Proposal {
+func (gm governanceMapper) GetProposal(ctx sdk.Context, proposalID int64) Proposal {
 	store := ctx.KVStore(gm.proposalStoreKey)
-	bz := store.Get(proposalId)
+	bz := store.Get(proposalID)
 	if bz == nil {
 		return nil
 	}
@@ -53,7 +53,7 @@ func (gm governanceMapper) GetProposal(ctx sdk.Context, proposalId int64) Propos
 
 // Implements sdk.AccountMapper.
 func (gm governanceMapper) SetProposal(ctx sdk.Context, proposal Proposal) {
-	proposalId := proposal.ProposalId // TODO:  Proper Proposal ID
+	proposalID := proposal.ProposalID // TODO:  Proper Proposal ID
 	store := ctx.KVStore(gm.proposalStoreKey)
 
 	bz, err := gm.cdc.MarshalBinary(proposal)
@@ -61,35 +61,35 @@ func (gm governanceMapper) SetProposal(ctx sdk.Context, proposal Proposal) {
 		panic(err)
 	}
 
-	store.Set(proposalId, bz)
+	store.Set(proposalID, bz)
 }
 
-func (gm governanceMapper) getNewProposalId(ctx sdk.Context) int64 {
+func (gm governanceMapper) getNewProposalID(ctx sdk.Context) int64 {
 	store := ctx.KVStore(gm.proposalStoreKey)
-	bz := store.Get([]byte("newProposalId"))
+	bz := store.Get([]byte("newProposalID"))
 	if bz == nil {
 		return nil
 	}
 
-	proposalId = new(int64)
-	err := gm.cdc.UnmarshalBinaryBare(bz, proposalId)
+	proposalID = new(int64)
+	err := gm.cdc.UnmarshalBinaryBare(bz, proposalID)
 	if err != nil {
 		panic("should not happen")
 	}
 
-	bz, err := gm.cdc.MarshalBinaryBare(proposalId + 1)
+	bz, err := gm.cdc.MarshalBinaryBare(proposalID + 1)
 	if err != nil {
 		panic("should not happen")
 	}
 
-	store.Set([]byte("newProposalId"), bz)
+	store.Set([]byte("newProposalID"), bz)
 
-	return proposalId
+	return proposalID
 }
 
 func (gm governanceMapper) getProposalQueue(ctx sdk.Context) ProposalQueue {
 	store := ctx.KVStore(gm.proposalStoreKey)
-	bz := store.Get([]byte("proposalqueue"))
+	bz := store.Get([]byte("proposalQueue"))
 	if bz == nil {
 		return nil
 	}
@@ -111,7 +111,7 @@ func (gm governanceMapper) setProposalQueue(ctx sdk.Context, proposalQueue Propo
 		panic(err)
 	}
 
-	store.Set([]byte("proposalqueue"), bz)
+	store.Set([]byte("proposalQueue"), bz)
 }
 
 func (gm governanceMapper) ProposalQueuePeek(ctx sdk.Context) Proposal {
@@ -133,10 +133,10 @@ func (gm governanceMapper) ProposalQueuePop(ctx sdk.Context) Proposal {
 }
 
 func (gm governanceMapper) ProposalQueuePush(ctx sdk.Context, proposal Proposal) {
-	proposalQueue := append(gm.getProposalQueue(ctx), proposal.ProposalId)
+	proposalQueue := append(gm.getProposalQueue(ctx), proposal.ProposalID)
 	bz, err := gm.cdc.MarshalBinary(proposalQueue)
 	if err != nil {
 		panic(err)
 	}
-	store.Set([]byte("proposalqueue"), bz)
+	store.Set([]byte("proposalQueue"), bz)
 }
