@@ -53,7 +53,6 @@ func (gm governanceMapper) GetProposal(ctx sdk.Context, proposalID int64) Propos
 
 // Implements sdk.AccountMapper.
 func (gm governanceMapper) SetProposal(ctx sdk.Context, proposal Proposal) {
-	proposalID := proposal.ProposalID // TODO:  Proper Proposal ID
 	store := ctx.KVStore(gm.proposalStoreKey)
 
 	bz, err := gm.cdc.MarshalBinary(proposal)
@@ -115,7 +114,7 @@ func (gm governanceMapper) setProposalQueue(ctx sdk.Context, proposalQueue Propo
 }
 
 func (gm governanceMapper) ProposalQueuePeek(ctx sdk.Context) Proposal {
-	proposalQueue := gm.getProposalQueue(ctx)
+	proposalQueue := gm.getProposaljueue(ctx)
 	if len(proposalQueue) == 0 {
 		return nil
 	}

@@ -77,11 +77,11 @@ func handleDepositMsg(ctx sdk.Context, gm GovernanceMapper, msg DepositMsg) sdk.
 	proposal := gm.getProposal(ctx, msg.ProposalID)
 
 	if proposal == nil {
-		return ErrUnknownProposal(proposalId).Result() // TODO: Return proper Error
+		return ErrUnknownProposal(proposalId).Result()
 	}
 
 	if proposal.isActive() {
-		return ErrAlreadyActiveProposal(proposalId).Result() // TODO: Return proper Error
+		return ErrAlreadyActiveProposal(proposalId).Result()
 	}
 
 	if ctx.isCheckTx() {
@@ -110,11 +110,11 @@ func handleVoteMsg(ctx sdk.Context, ck CoinKeeper, msg VoteMsg) sdk.Result {
 
 	proposal := gm.getProposal(ctx, msg.ProposalID)
 	if proposal == nil {
-		return ErrUnknownProposal(proposalId).Result() // TODO: Return proper Error
+		return ErrUnknownProposal(proposalId).Result()
 	}
 
 	if !proposal.isActive() || ctx.BlockHeight() > proposal.VotingStartBlock+proposal.Procedure.VotingPeriod {
-		return ErrInactiveProposal(proposalId).Result() // TODO: Return proper Error
+		return ErrInactiveProposal(proposalId).Result()
 	}
 
 	validatorGovInfo := proposal.getValidatorGovInfo(msg.Voter)
@@ -182,7 +182,7 @@ func (proposal Proposal) activateVotingPeriod(ctx sdk.Context, gm GovernanceMapp
 	proposal.VotingStartBlock = ctx.BlockHeight()
 	proposal.InitTotalVotingPower = TotalVotingPower // Get TotalVotingPower from stake store
 
-	validatorList := gm.sm.getValidatorList() // TODO: GetValidator list from staking module
+	validatorList := gm.sm.getValidators(100) // TODO: GetValidator list from staking module
 
 	for index, validator := range validatorList {
 		validatorGovInfo = ValidatorGovInfo{
