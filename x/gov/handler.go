@@ -48,7 +48,7 @@ func handleSubmitProposalMsg(ctx sdk.Context, gm GovernanceMapper, msg SubmitPro
 		TotalDeposit:         initialDeposit.Amount,
 		Deposits:             []Deposit{initialDeposit},
 		SubmitBlock:          ctx.BlockHeight(),
-		VotingStartBlock:     -1,
+		VotingStartBlock:     -1, // TODO: Make Time
 		InitTotalVotingPower: 0,
 		Procedure:            activeProcedure, // TODO: Get cloned active Procedure from params kvstore
 		YesVotes:             0,
@@ -180,7 +180,10 @@ func handleVoteMsg(ctx sdk.Context, ck CoinKeeper, msg VoteMsg) sdk.Result {
 
 func (proposal Proposal) activateVotingPeriod(ctx sdk.Context, gm GovernanceMapper) {
 	proposal.VotingStartBlock = ctx.BlockHeight()
-	proposal.InitTotalVotingPower = TotalVotingPower // Get TotalVotingPower from stake store
+
+	stakeState := gm.sm.loadGlobalState() // Get GlobalState from stakeStore
+
+	proposal.InitTotalVotingPower = stakeState.TotalSupply // Get TotalVotingPower from stake store
 
 	validatorList := gm.sm.getValidators(100) // TODO: GetValidator list from staking module
 
