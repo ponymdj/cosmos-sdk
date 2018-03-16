@@ -28,6 +28,7 @@ const (
 	CodeUnknownRequest      CodeType = 6
 	CodeUnrecognizedAddress CodeType = 7
 	CodeInvalidPubKey       CodeType = 8
+	CodeInvalidCoins        CodeType = 9
 
 	CodeGenesisParse CodeType = 0xdead // TODO: remove ?
 )
@@ -53,6 +54,8 @@ func CodeToDefaultMsg(code CodeType) string {
 		return "Unrecognized address"
 	case CodeInvalidPubKey:
 		return "Invalid pubkey"
+	case CodeInvalidCoins:
+		return "Code invalid coins"
 	default:
 		return fmt.Sprintf("Unknown code %d", code)
 	}
@@ -89,6 +92,10 @@ func ErrUnrecognizedAddress(msg string) Error {
 }
 func ErrInvalidPubKey(msg string) Error {
 	return newError(CodeInvalidPubKey, msg)
+}
+
+func ErrInvalidCoins(coins Coins) Error {
+	return newError(CodeInvalidCoins, coins.String())
 }
 
 //----------------------------------------
