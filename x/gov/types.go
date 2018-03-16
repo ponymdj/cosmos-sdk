@@ -1,11 +1,9 @@
 package gov
 
-import crypto "github.com/tendermint/go-crypto"
-
 type Vote struct {
-	Voter      crypto.address `json:"voter"`       //  address of the voter
-	ProposalID int64          `json:"proposal_id"` //  proposalID of the proposal
-	Option     string         `json:"option"`      //  option from OptionSet chosen by the voter
+	Voter      sdk.Address `json:"voter"`       //  address of the voter
+	ProposalID int64       `json:"proposal_id"` //  proposalID of the proposal
+	Option     string      `json:"option"`      //  option from OptionSet chosen by the voter
 }
 
 //-----------------------------------------------------------
@@ -34,7 +32,7 @@ type Proposal struct {
 	AbstainVotes     int64 `json:"abstain_votes"`      //  Weight of Abstain Votes
 }
 
-func (proposal Proposal) getValidatorGovInfo(validatorAddr crypto.address) ValidatorGovInfo {
+func (proposal Proposal) getValidatorGovInfo(validatorAddr sdk.Address) ValidatorGovInfo {
 	for index, validatorGovInfo := range proposal.ValidatorGovInfos {
 		if validatorGovInfo.ValidatorAddr == validatorAddr {
 			return validatorGovInfo
@@ -43,7 +41,7 @@ func (proposal Proposal) getValidatorGovInfo(validatorAddr crypto.address) Valid
 	return nil
 }
 
-func (proposal Proposal) getVote(voterAddr crypto.address) Vote {
+func (proposal Proposal) getVote(voterAddr sdk.Address) Vote {
 	for index, vote := range proposal.Votes {
 		if validatorGovInfo.ValidatorAddr == validatorAddr {
 			return validatorGovInfo
@@ -82,16 +80,16 @@ type Procedure struct {
 
 // Deposit
 type Deposit struct {
-	Depositer crypto.address `json:"depositer"` //  Address of the depositer
-	Amount    sdk.Coins      `json:"amount"`    //  Deposit amount
+	Depositer sdk.Address `json:"depositer"` //  Address of the depositer
+	Amount    sdk.Coins   `json:"amount"`    //  Deposit amount
 }
 
 type ValidatorGovInfo struct {
-	ProposalID      int64          //  Id of the Proposal this validator
-	ValidatorAddr   crypto.address //  Address of the validator
-	InitVotingPower int64          //  Voting power of validator when proposal enters voting period
-	Minus           int64          //  Minus of validator, used to compute validator's voting power
-	LastVoteWeight  int64          //  Weight of the last vote by validator at time of casting, -1 if hasn't voted yet
+	ProposalID      int64       //  Id of the Proposal this validator
+	ValidatorAddr   sdk.Address //  Address of the validator
+	InitVotingPower int64       //  Voting power of validator when proposal enters voting period
+	Minus           int64       //  Minus of validator, used to compute validator's voting power
+	LastVoteWeight  int64       //  Weight of the last vote by validator at time of casting, -1 if hasn't voted yet
 }
 
 type ProposalQueue []int64
