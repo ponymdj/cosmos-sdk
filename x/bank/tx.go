@@ -21,7 +21,7 @@ func NewSendMsg(in []Input, out []Output) SendMsg {
 }
 
 // Implements Msg.
-func (msg SendMsg) MsgType() string { return "bank" } // TODO: "bank/send"
+func (msg SendMsg) Type() string { return "bank" } // TODO: "bank/send"
 
 // Implements Msg.
 func (msg SendMsg) ValidateBasic() sdk.Error {

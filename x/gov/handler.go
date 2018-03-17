@@ -24,14 +24,14 @@ func NewHandler(gm governanceMapper) sdk.Handler {
 }
 
 // Handle SubmitProposalMsg.
-func handleSubmitProposalMsg(ctx sdk.Context, gm GovernanceMapper, msg SubmitProposalMsg) sdk.Result {
+func handleSubmitProposalMsg(ctx sdk.Context, gm governanceMapper, msg SubmitProposalMsg) sdk.Result {
 
-	_, err := gm.ck.SubtractCoins(ctx, msg.Depositer, msg.InitialDeposit)
+	_, err := gm.ck.SubtractCoins(ctx, msg.Proposer, msg.InitialDeposit)
 	if err != nil {
 		return err.Result()
 	}
 
-	if ctx.isCheckTx() {
+	if ctx.IsCheckTx() {
 		return sdk.Result{} // TODO
 	}
 
@@ -41,50 +41,50 @@ func handleSubmitProposalMsg(ctx sdk.Context, gm GovernanceMapper, msg SubmitPro
 	}
 
 	proposal := Proposal{
-		ProposalID:           gm.getNewProposalID(),
-		Title:                msg.Title,
-		Description:          msg.Description,
-		ProposalType:         msg.ProposalType,
-		TotalDeposit:         initialDeposit.Amount,
-		Deposits:             []Deposit{initialDeposit},
-		SubmitBlock:          ctx.BlockHeight(),
-		VotingStartBlock:     -1, // TODO: Make Time
-		InitTotalVotingPower: 0,
-		Procedure:            activeProcedure, // TODO: Get cloned active Procedure from params kvstore
-		YesVotes:             0,
-		NoVotes:              0,
-		NoWithVetoVotes:      0,
-		AbstainVotes:         0,
+		ProposalID:       gm.getNewProposalID(ctx),
+		Title:            msg.Title,
+		Description:      msg.Description,
+		ProposalType:     msg.ProposalType,
+		TotalDeposit:     initialDeposit.Amount,
+		Deposits:         []Deposit{initialDeposit},
+		SubmitBlock:      ctx.BlockHeight(),
+		VotingStartBlock: -1, // TODO: Make Time
+		TotalVotingPower: 0,
+		Procedure:        activeProcedure, // TODO: Get cloned active Procedure from params kvstore
+		YesVotes:         0,
+		NoVotes:          0,
+		NoWithVetoVotes:  0,
+		AbstainVotes:     0,
 	}
 
 	if proposal.TotalDeposit.IsGTE(proposal.Procedure.MinDeposit) {
-		activateVotingPeriod(ctx, gm)
+		activateVotingPeriod(ctx, gm, proposal)
 	}
 
-	gm.SetProposal(proposal)
+	gm.SetProposal(ctx, proposal)
 
 	return sdk.Result{} // TODO
 }
 
 // Handle DepositMsg.
-func handleDepositMsg(ctx sdk.Context, gm GovernanceMapper, msg DepositMsg) sdk.Result {
+func handleDepositMsg(ctx sdk.Context, gm governanceMapper, msg DepositMsg) sdk.Result {
 
 	_, err := gm.ck.SubtractCoins(ctx, msg.Depositer, msg.Amount)
 	if err != nil {
 		return err.Result()
 	}
 
-	proposal := gm.getProposal(ctx, msg.ProposalID)
+	proposal := gm.GetProposal(ctx, msg.ProposalID)
 
 	if proposal == nil {
-		return ErrUnknownProposal(proposalId).Result()
+		return ErrUnknownProposal(msg.ProposalID).Result()
 	}
 
 	if proposal.isActive() {
-		return ErrAlreadyActiveProposal(proposalId).Result()
+		return ErrAlreadyActiveProposal(msg.ProposalID).Result()
 	}
 
-	if ctx.isCheckTx() {
+	if ctx.IsCheckTx() {
 		return sdk.Result{} // TODO
 	}
 
@@ -97,24 +97,24 @@ func handleDepositMsg(ctx sdk.Context, gm GovernanceMapper, msg DepositMsg) sdk.
 	proposal.Deposits = append(proposal.Deposits, deposit)
 
 	if proposal.TotalDeposit.IsGTE(proposal.Procedure.MinDeposit) {
-		activateVotingPeriod(ctx, gm)
+		activateVotingPeriod(ctx, gm, proposal)
 	}
 
-	gm.setProposal(ctx, msg.Proposal)
+	gm.SetProposal(ctx, Proposal)
 
 	return sdk.Result{} // TODO
 }
 
 // Handle SendMsg.
-func handleVoteMsg(ctx sdk.Context, ck CoinKeeper, msg VoteMsg) sdk.Result {
+func handleVoteMsg(ctx sdk.Context, gm governanceMapper, msg VoteMsg) sdk.Result {
 
-	proposal := gm.getProposal(ctx, msg.ProposalID)
+	proposal := gm.GetProposal(ctx, msg.ProposalID)
 	if proposal == nil {
-		return ErrUnknownProposal(proposalId).Result()
+		return ErrUnknownProposal(msg.ProposalID).Result()
 	}
 
 	if !proposal.isActive() || ctx.BlockHeight() > proposal.VotingStartBlock+proposal.Procedure.VotingPeriod {
-		return ErrInactiveProposal(proposalId).Result()
+		return ErrInactiveProposal(msg.ProposalID).Result()
 	}
 
 	validatorGovInfo := proposal.getValidatorGovInfo(msg.Voter)
@@ -122,7 +122,7 @@ func handleVoteMsg(ctx sdk.Context, ck CoinKeeper, msg VoteMsg) sdk.Result {
 	// Need to finalize interface to staking mapper for delegatedTo. Makes assumption from here on out.
 	delegatedTo := gm.sm.getDelegations(ctx, msg.Voter) // TODO: Get list validators that an address is delegated to
 
-	if validatarGovInfo == nil && len(delegatedTo) == 0 {
+	if validatorGovInfo == nil && len(delegatedTo) == 0 {
 		return ErrAddressNotStaked(msg.Voter).Result() // TODO: Return proper Error
 	}
 
@@ -130,7 +130,7 @@ func handleVoteMsg(ctx sdk.Context, ck CoinKeeper, msg VoteMsg) sdk.Result {
 		return ErrAddressChangedDelegation(msg.Voter).Result() // TODO: Return proper Error
 	}
 
-	if ctx.isCheckTx() {
+	if ctx.IsCheckTx() {
 		return sdk.Result{} // TODO
 	}
 
@@ -178,7 +178,7 @@ func handleVoteMsg(ctx sdk.Context, ck CoinKeeper, msg VoteMsg) sdk.Result {
 	return sdk.Result{} // TODO
 }
 
-func (proposal Proposal) activateVotingPeriod(ctx sdk.Context, gm GovernanceMapper) {
+func activateVotingPeriod(ctx sdk.Context, gm governanceMapper, proposal Proposal) {
 	proposal.VotingStartBlock = ctx.BlockHeight()
 
 	stakeState := gm.sm.loadGlobalState() // Get GlobalState from stakeStore

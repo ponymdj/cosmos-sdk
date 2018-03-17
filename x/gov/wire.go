@@ -1,7 +1,7 @@
 package gov
 
 import (
-	"github.com/tendermint/go-wire"
+	"github.com/cosmos/cosmos-sdk/wire"
 )
 
 func RegisterWire(cdc *wire.Codec) {

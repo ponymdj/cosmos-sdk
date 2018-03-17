@@ -3,6 +3,8 @@ package gov
 import (
 	"encoding/json"
 	"fmt"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 //-----------------------------------------------------------
@@ -16,7 +18,7 @@ type SubmitProposalMsg struct {
 	InitialDeposit sdk.Coins   //  Initial deposit paid by sender. Must be strictly positive.
 }
 
-func NewSubmitProposalMsg(title string, description string, proposalType string, proposer sdk.Address, initialDeposit int64) SendMsg {
+func NewSubmitProposalMsg(title string, description string, proposalType string, proposer sdk.Address, initialDeposit int64) SubmitProposalMsg {
 	return SubmitProposalMsg{
 		Title:          title,
 		Description:    description,
@@ -72,7 +74,7 @@ func (msg SubmitProposalMsg) GetSignBytes() []byte {
 }
 
 // Implements Msg.
-func (msg SendMsg) GetSigners() []sdk.Address {
+func (msg SubmitProposalMsg) GetSigners() []sdk.Address {
 	return []sdk.Address{msg.Proposer}
 }
 
@@ -120,7 +122,7 @@ func (msg DepositMsg) Get(key interface{}) (value interface{}) {
 }
 
 // Implements Msg.
-func (msg SubmitProposalMsg) GetSignBytes() []byte {
+func (msg DepositMsg) GetSignBytes() []byte {
 	b, err := json.Marshal(msg) // XXX: ensure some canonical form
 	if err != nil {
 		panic(err)
@@ -129,7 +131,7 @@ func (msg SubmitProposalMsg) GetSignBytes() []byte {
 }
 
 // Implements Msg.
-func (msg SubmitProposalMsg) GetSigners() []sdk.Address {
+func (msg DepositMsg) GetSigners() []sdk.Address {
 	return []sdk.Address{msg.Depositer}
 }
 
@@ -142,7 +144,7 @@ type VoteMsg struct {
 	Option     string      //  option from OptionSet chosen by the voter
 }
 
-func NewVoteMsg(voter sdk.Address, proposalID int64, option string) SendMsg {
+func NewVoteMsg(voter sdk.Address, proposalID int64, option string) VoteMsg {
 	return VoteMsg{
 		Voter:      voter,
 		ProposalID: proposalID,

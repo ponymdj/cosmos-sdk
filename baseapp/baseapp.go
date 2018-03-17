@@ -385,7 +385,7 @@ func (app *BaseApp) runTx(isCheckTx bool, txBytes []byte, tx sdk.Tx) (result sdk
 	}
 
 	// Match and run route.
-	msgType := msg.MsgType()
+	msgType := msg.Type()
 	handler := app.router.Route(msgType)
 	result = handler(ctx, msg)
 

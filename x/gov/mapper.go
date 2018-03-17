@@ -1,23 +1,27 @@
 package gov
 
 import (
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	wire "github.com/cosmos/cosmos-sdk/wire"
 	"github.com/cosmos/cosmos-sdk/x/bank"
-	wire "github.com/tendermint/go-wire"
 )
 
 type governanceMapper struct {
 	// The reference to the CoinKeeper to modify balances
 	ck bank.CoinKeeper
 
+	// The reference to the StakeMapper to get information about stakers
+	sm stake.StakeMapper
+
 	// The (unexposed) keys used to access the stores from the Context.
 	proposalStoreKey sdk.StoreKey
 
-	// The wire codec for binary encoding/decoding of accounts.
+	// The wire codec for binary encoding/decoding.
 	cdc *wire.Codec
 }
 
 // NewGovernanceMapper returns a mapper that uses go-wire to (binary) encode and decode gov types.
-func NewGovernanceMapper(key sdk.StoreKey, ck bank.CoinKeeper) accountMapper {
+func NewGovernanceMapper(key sdk.StoreKey, ck bank.CoinKeeper) governanceMapper {
 	cdc := wire.NewCodec()
 	return governanceMapper{
 		proposalStoreKey: key,
@@ -26,11 +30,7 @@ func NewGovernanceMapper(key sdk.StoreKey, ck bank.CoinKeeper) accountMapper {
 	}
 }
 
-// Returns the go-wire codec.  You may need to register interfaces
-// and concrete types here, if your app's sdk.Account
-// implementation includes interface fields.
-// NOTE: It is not secure to expose the codec, so check out
-// .Seal().
+// Returns the go-wire codec.
 func (gm governanceMapper) WireCodec() *wire.Codec {
 	return gm.cdc
 }
@@ -76,7 +76,7 @@ func (gm governanceMapper) getNewProposalID(ctx sdk.Context) int64 {
 		panic("should not happen")
 	}
 
-	bz, err := gm.cdc.MarshalBinaryBare(proposalID + 1)
+	bz, err = gm.cdc.MarshalBinaryBare(proposalID + 1)
 	if err != nil {
 		panic("should not happen")
 	}
@@ -114,7 +114,7 @@ func (gm governanceMapper) setProposalQueue(ctx sdk.Context, proposalQueue Propo
 }
 
 func (gm governanceMapper) ProposalQueuePeek(ctx sdk.Context) Proposal {
-	proposalQueue := gm.getProposaljueue(ctx)
+	proposalQueue := gm.getProposalQueue(ctx)
 	if len(proposalQueue) == 0 {
 		return nil
 	}
