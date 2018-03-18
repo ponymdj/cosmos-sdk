@@ -44,13 +44,13 @@ func (msg SubmitProposalMsg) ValidateBasic() sdk.Error {
 		return ErrInvalidProposalType(msg.ProposalType) // TODO: Proper Error
 	}
 	if len(msg.Proposer) == 0 {
-		return ErrInvalidAddress(msg.Proposer.String())
+		return sdk.ErrInvalidAddress(msg.Proposer.String())
 	}
 	if !msg.InitialDeposit.IsValid() {
-		return ErrInvalidCoins(msg.InitialDeposit.String())
+		return sdk.ErrInvalidCoins(msg.InitialDeposit.String())
 	}
 	if !msg.InitialDeposit.IsPositive() {
-		return ErrInvalidCoins(msg.InitialDeposit.String())
+		return sdk.ErrInvalidCoins(msg.InitialDeposit.String())
 	}
 	return nil
 }
@@ -101,19 +101,19 @@ func (msg DepositMsg) Type() string { return "gov" }
 // Implements Msg.
 func (msg DepositMsg) ValidateBasic() sdk.Error {
 	if len(msg.Depositer) == 0 {
-		return ErrInvalidAddress(msg.Depositer.String())
+		return sdk.ErrInvalidAddress(msg.Depositer.String())
 	}
 	if !msg.Amount.IsValid() {
-		return ErrInvalidCoins(msg.Amount.String())
+		return sdk.ErrInvalidCoins(msg.Amount.String())
 	}
 	if !msg.Amount.IsPositive() {
-		return ErrInvalidCoins(msg.Amount.String())
+		return sdk.ErrInvalidCoins(msg.Amount.String())
 	}
 	return nil
 }
 
 func (msg DepositMsg) String() string {
-	return fmt.Sprintf("DepositMsg{%v=>%v: %v}", msg.Depositer, msg.ProposerId, msg.Amount)
+	return fmt.Sprintf("DepositMsg{%v=>%v: %v}", msg.Depositer, msg.ProposalID, msg.Amount)
 }
 
 // Implements Msg.
@@ -159,10 +159,10 @@ func (msg VoteMsg) Type() string { return "gov" }
 func (msg VoteMsg) ValidateBasic() sdk.Error {
 
 	if len(msg.Voter) == 0 {
-		return ErrInvalidAddress(msg.Voter.String())
+		return sdk.ErrInvalidAddress(msg.Voter.String())
 	}
 	if msg.Option != "Yes" || msg.Option != "No" || msg.Option != "NoWithVeto" || msg.Option != "Abstain" {
-		return ErrInvalidAttribute(msg.Option) // TODO: Proper Error
+		return ErrInvalidVote(msg.Option)
 	}
 	return nil
 }

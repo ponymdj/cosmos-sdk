@@ -7,18 +7,17 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-type CodeType = sdk.CodeType
-
 const ( // TODO TODO TODO TODO TODO TODO
 	// Gov errors reserve 200 ~ 299.
-	CodeUnknownProposal          CodeType = 201
-	CodeInactiveProposal         CodeType = 202
-	CodeAlreadyActiveProposal    CodeType = 203
-	CodeAddressChangedDelegation CodeType = 204
-	CodeAddressNotStaked         CodeType = 205
-	CodeInvalidTitle             CodeType = 206
-	CodeInvalidDescription       CodeType = 207
-	CodeInvalidProposalType      CodeType = 208
+	CodeUnknownProposal          sdk.CodeType = 201
+	CodeInactiveProposal         sdk.CodeType = 202
+	CodeAlreadyActiveProposal    sdk.CodeType = 203
+	CodeAddressChangedDelegation sdk.CodeType = 204
+	CodeAddressNotStaked         sdk.CodeType = 205
+	CodeInvalidTitle             sdk.CodeType = 206
+	CodeInvalidDescription       sdk.CodeType = 207
+	CodeInvalidProposalType      sdk.CodeType = 208
+	CodeInvalidVote              sdk.CodeType = 209
 )
 
 //----------------------------------------
@@ -54,4 +53,8 @@ func ErrInvalidDescription(description string) sdk.Error {
 
 func ErrInvalidProposalType(proposalType string) sdk.Error {
 	return sdk.NewError(CodeInvalidProposalType, "Proposal Type '"+proposalType+"' is not valid")
+}
+
+func ErrInvalidVote(voteOption string) sdk.Error {
+	return sdk.NewError(CodeInvalidVote, "'"+voteOption+"' is not a valid voting option")
 }

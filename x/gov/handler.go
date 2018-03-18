@@ -54,7 +54,7 @@ func handleSubmitProposalMsg(ctx sdk.Context, gm governanceMapper, msg SubmitPro
 		SubmitBlock:      ctx.BlockHeight(),
 		VotingStartBlock: -1, // TODO: Make Time
 		TotalVotingPower: 0,
-		Procedure:        gm.GetActiveProcedure(), // TODO: Get cloned active Procedure from params kvstore
+		Procedure:        *(gm.GetActiveProcedure()), // TODO: Get cloned active Procedure from params kvstore
 		YesVotes:         0,
 		NoVotes:          0,
 		NoWithVetoVotes:  0,
@@ -124,7 +124,7 @@ func handleVoteMsg(ctx sdk.Context, gm governanceMapper, msg VoteMsg) sdk.Result
 	validatorGovInfo := proposal.getValidatorGovInfo(msg.Voter)
 
 	// Need to finalize interface to staking mapper for delegatedTo. Makes assumption from here on out.
-	delegatedTo := gm.sm.getDelegations(ctx, msg.Voter) // TODO: Get list validators that an address is delegated to
+	delegatedTo := gm.sm.LoadDelegatorCandidates(ctx, msg.Voter) // TODO: Finalize with staking store
 
 	if validatorGovInfo == nil && len(delegatedTo) == 0 {
 		return ErrAddressNotStaked(msg.Voter).Result() // TODO: Return proper Error
@@ -185,17 +185,19 @@ func handleVoteMsg(ctx sdk.Context, gm governanceMapper, msg VoteMsg) sdk.Result
 func activateVotingPeriod(ctx sdk.Context, gm governanceMapper, proposal *Proposal) {
 	proposal.VotingStartBlock = ctx.BlockHeight()
 
-	stakeState := gm.sm.loadGlobalState() // Get GlobalState from stakeStore
+	// TODO: Can we get this directly from stakeState
+	// stakeState := gm.sm.loadGlobalState()
+	// proposal.TotalVotingPower = stakeState.TotalSupply
 
-	proposal.TotalVotingPower = stakeState.TotalSupply // Get TotalVotingPower from stake store
+	proposal.TotalVotingPower = 0
 
-	validatorList := gm.sm.getValidators(100) // TODO: GetValidator list from staking module
+	validatorList := gm.sm.GetValidators(100) // TODO: Finalize with staking module
 
 	for index, validator := range validatorList {
 		validatorGovInfo := ValidatorGovInfo{
 			ProposalID:      proposal.ProposalID,
-			ValidatorAddr:   validator.address,
-			InitVotingPower: gm.sm.getVotingPower(validator), // TODO: Get voting power of each validator from staking module
+			ValidatorAddr:   validator.Address,     // TODO: Finalize with staking module
+			InitVotingPower: validator.VotingPower, // TODO: Finalize with staking module
 			Minus:           0,
 			LastVoteWeight:  -1,
 		}

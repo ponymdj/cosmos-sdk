@@ -1,6 +1,8 @@
 package gov
 
 import (
+	"bytes"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -38,7 +40,7 @@ type Proposal struct {
 
 func (proposal Proposal) getValidatorGovInfo(validatorAddr sdk.Address) *ValidatorGovInfo {
 	for _, validatorGovInfo := range proposal.ValidatorGovInfos {
-		if validatorGovInfo.ValidatorAddr == validatorAddr {
+		if bytes.Equal(validatorGovInfo.ValidatorAddr, validatorAddr) {
 			return &validatorGovInfo
 		}
 	}
@@ -47,7 +49,7 @@ func (proposal Proposal) getValidatorGovInfo(validatorAddr sdk.Address) *Validat
 
 func (proposal Proposal) getVote(voterAddr sdk.Address) *Vote {
 	for _, vote := range proposal.VoteList {
-		if vote.Voter == voterAddr {
+		if bytes.Equal(vote.Voter, voterAddr) {
 			return &vote
 		}
 	}
@@ -55,19 +57,19 @@ func (proposal Proposal) getVote(voterAddr sdk.Address) *Vote {
 }
 
 func (proposal Proposal) isActive() bool {
-	return VotingStartBlock >= 0
+	return proposal.VotingStartBlock >= 0
 }
 
 func (proposal Proposal) updateTally(option string, amount int64) {
 	switch option {
 	case "Yes":
-		proposal.YesVotes += votingPower
+		proposal.YesVotes += amount
 	case "No":
-		proposal.NoVotes += votingPower
+		proposal.NoVotes += amount
 	case "NoWithVeto":
-		proposal.NoWithVetoVotes += votingPower
+		proposal.NoWithVetoVotes += amount
 	case "Abstain":
-		proposal.AbstainVotes += votingPower
+		proposal.AbstainVotes += amount
 	}
 }
 

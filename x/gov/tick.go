@@ -1,5 +1,7 @@
 package gov
 
+/*
+
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	abci "github.com/tendermint/abci/types"
@@ -9,7 +11,7 @@ func NewBeginBlocker(gm governanceMapper) sdk.BeginBlocker {
 	return func(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 		proposal := gm.ProposalQueuePeek(ctx)
 		if proposal == nil {
-			return
+			return abci.ResponseBeginBlock{} // TODO
 		}
 
 		// Don't want to do urgent for now
@@ -47,7 +49,7 @@ func NewBeginBlocker(gm governanceMapper) sdk.BeginBlocker {
 				}
 
 				// check next proposal recursively
-				return checkProposal()
+				checkProposal()
 			}
 
 			//  TODO: Prune proposal
@@ -55,3 +57,5 @@ func NewBeginBlocker(gm governanceMapper) sdk.BeginBlocker {
 		return abci.ResponseBeginBlock{}
 	}
 }
+
+*/
