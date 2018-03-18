@@ -18,7 +18,7 @@ type SubmitProposalMsg struct {
 	InitialDeposit sdk.Coins   //  Initial deposit paid by sender. Must be strictly positive.
 }
 
-func NewSubmitProposalMsg(title string, description string, proposalType string, proposer sdk.Address, initialDeposit int64) SubmitProposalMsg {
+func NewSubmitProposalMsg(title string, description string, proposalType string, proposer sdk.Address, initialDeposit sdk.Coins) SubmitProposalMsg {
 	return SubmitProposalMsg{
 		Title:          title,
 		Description:    description,
@@ -35,22 +35,22 @@ func (msg SubmitProposalMsg) Type() string { return "gov" }
 func (msg SubmitProposalMsg) ValidateBasic() sdk.Error {
 
 	if len(msg.Title) == 0 {
-		return ErrInvalidAttribute(msg.Title) // TODO: Proper Error
+		return ErrInvalidTitle(msg.Title) // TODO: Proper Error
 	}
 	if len(msg.Description) == 0 {
-		return ErrInvalidAttribute(msg.Description) // TODO: Proper Error
+		return ErrInvalidDescription(msg.Description) // TODO: Proper Error
 	}
 	if len(msg.ProposalType) == 0 {
-		return ErrInvalidAttribute(msg.ProposalType) // TODO: Proper Error
+		return ErrInvalidProposalType(msg.ProposalType) // TODO: Proper Error
 	}
 	if len(msg.Proposer) == 0 {
 		return ErrInvalidAddress(msg.Proposer.String())
 	}
-	if !msg.Amount.IsValid() {
-		return ErrInvalidCoins(msg.Amount.String())
+	if !msg.InitialDeposit.IsValid() {
+		return ErrInvalidCoins(msg.InitialDeposit.String())
 	}
-	if !msg.Amount.IsPositive() {
-		return ErrInvalidCoins(msg.Amount.String())
+	if !msg.InitialDeposit.IsPositive() {
+		return ErrInvalidCoins(msg.InitialDeposit.String())
 	}
 	return nil
 }
@@ -91,7 +91,7 @@ func NewDepositMsgMsg(proposalID int64, depositer sdk.Address, amount sdk.Coins)
 	return DepositMsg{
 		ProposalID: proposalID,
 		Depositer:  depositer,
-		Amount:     Amount,
+		Amount:     amount,
 	}
 }
 

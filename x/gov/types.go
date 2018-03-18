@@ -36,19 +36,19 @@ type Proposal struct {
 	AbstainVotes     int64 `json:"abstain_votes"`      //  Weight of Abstain Votes
 }
 
-func (proposal Proposal) getValidatorGovInfo(validatorAddr sdk.Address) ValidatorGovInfo {
-	for index, validatorGovInfo := range proposal.ValidatorGovInfos {
+func (proposal Proposal) getValidatorGovInfo(validatorAddr sdk.Address) *ValidatorGovInfo {
+	for _, validatorGovInfo := range proposal.ValidatorGovInfos {
 		if validatorGovInfo.ValidatorAddr == validatorAddr {
-			return validatorGovInfo
+			return &validatorGovInfo
 		}
 	}
 	return nil
 }
 
-func (proposal Proposal) getVote(voterAddr sdk.Address) Vote {
-	for index, vote := range proposal.Votes {
-		if validatorGovInfo.ValidatorAddr == validatorAddr {
-			return validatorGovInfo
+func (proposal Proposal) getVote(voterAddr sdk.Address) *Vote {
+	for _, vote := range proposal.VoteList {
+		if vote.Voter == voterAddr {
+			return &vote
 		}
 	}
 	return nil
@@ -80,6 +80,15 @@ type Procedure struct {
 	Veto              sdk.Rational `json:"veto"`               //  Minimum value of Veto votes to Total votes ratio for proposal to be vetoed. Initial value: 1/3
 	MaxDepositPeriod  int64        `json:"max_deposit_period"` //  Maximum period for Atom holders to deposit on a proposal. Initial value: 2 months
 	GovernancePenalty sdk.Rational `json:"governance_penalty"` //  Penalty if validator does not vote
+}
+
+func (procedure Procedure) validProposalType(proposalType string) bool {
+	for _, p := range procedure.ProposalTypes {
+		if p == proposalType {
+			return true
+		}
+	}
+	return false
 }
 
 // Deposit

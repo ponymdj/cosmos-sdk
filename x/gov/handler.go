@@ -31,6 +31,10 @@ func handleSubmitProposalMsg(ctx sdk.Context, gm governanceMapper, msg SubmitPro
 		return err.Result()
 	}
 
+	if !gm.GetActiveProcedure().validProposalType(msg.ProposalType) {
+		return ErrInvalidProposalType(msg.ProposalType).Result()
+	}
+
 	if ctx.IsCheckTx() {
 		return sdk.Result{} // TODO
 	}
@@ -50,7 +54,7 @@ func handleSubmitProposalMsg(ctx sdk.Context, gm governanceMapper, msg SubmitPro
 		SubmitBlock:      ctx.BlockHeight(),
 		VotingStartBlock: -1, // TODO: Make Time
 		TotalVotingPower: 0,
-		Procedure:        activeProcedure, // TODO: Get cloned active Procedure from params kvstore
+		Procedure:        gm.GetActiveProcedure(), // TODO: Get cloned active Procedure from params kvstore
 		YesVotes:         0,
 		NoVotes:          0,
 		NoWithVetoVotes:  0,
@@ -58,7 +62,7 @@ func handleSubmitProposalMsg(ctx sdk.Context, gm governanceMapper, msg SubmitPro
 	}
 
 	if proposal.TotalDeposit.IsGTE(proposal.Procedure.MinDeposit) {
-		activateVotingPeriod(ctx, gm, proposal)
+		activateVotingPeriod(ctx, gm, &proposal)
 	}
 
 	gm.SetProposal(ctx, proposal)
@@ -100,7 +104,7 @@ func handleDepositMsg(ctx sdk.Context, gm governanceMapper, msg DepositMsg) sdk.
 		activateVotingPeriod(ctx, gm, proposal)
 	}
 
-	gm.SetProposal(ctx, Proposal)
+	gm.SetProposal(ctx, *proposal)
 
 	return sdk.Result{} // TODO
 }
@@ -134,15 +138,15 @@ func handleVoteMsg(ctx sdk.Context, gm governanceMapper, msg VoteMsg) sdk.Result
 		return sdk.Result{} // TODO
 	}
 
-	existingVote := proposal.getVote(msg.voter)
+	existingVote := proposal.getVote(msg.Voter)
 
 	if existingVote == nil {
-		proposal.Votes = append(proposal.Votes, Vote{Voter: msg.Voter, ProposalID: msg.ProposalID, Option: msg.Option})
+		proposal.VoteList = append(proposal.VoteList, Vote{Voter: msg.Voter, ProposalID: msg.ProposalID, Option: msg.Option})
 
 		if validatorGovInfo != nil {
 			voteWeight := validatorGovInfo.InitVotingPower - validatorGovInfo.Minus
 			proposal.updateTally(msg.Option, voteWeight)
-			validatorGovInfo.lastVoteWeight = voteWeight
+			validatorGovInfo.LastVoteWeight = voteWeight
 		}
 
 		for index, delegation := range delegatedTo {
@@ -159,10 +163,10 @@ func handleVoteMsg(ctx sdk.Context, gm governanceMapper, msg VoteMsg) sdk.Result
 
 	} else {
 		if validatorGovInfo != nil {
-			proposal.updateTally(existingVote.Option, -(validatorGovInfo.lastVoteWeight))
+			proposal.updateTally(existingVote.Option, -(validatorGovInfo.LastVoteWeight))
 			voteWeight := validatorGovInfo.InitVotingPower - validatorGovInfo.Minus
 			proposal.updateTally(msg.Option, voteWeight)
-			validatorGovInfo.lastVoteWeight = voteWeight
+			validatorGovInfo.LastVoteWeight = voteWeight
 		}
 
 		for index, delegation := range delegatedTo {
@@ -173,22 +177,22 @@ func handleVoteMsg(ctx sdk.Context, gm governanceMapper, msg VoteMsg) sdk.Result
 		existingVote.Option = msg.Option
 	}
 
-	gm.setProposal(ctx, msg.Proposal)
+	gm.SetProposal(ctx, *proposal)
 
 	return sdk.Result{} // TODO
 }
 
-func activateVotingPeriod(ctx sdk.Context, gm governanceMapper, proposal Proposal) {
+func activateVotingPeriod(ctx sdk.Context, gm governanceMapper, proposal *Proposal) {
 	proposal.VotingStartBlock = ctx.BlockHeight()
 
 	stakeState := gm.sm.loadGlobalState() // Get GlobalState from stakeStore
 
-	proposal.InitTotalVotingPower = stakeState.TotalSupply // Get TotalVotingPower from stake store
+	proposal.TotalVotingPower = stakeState.TotalSupply // Get TotalVotingPower from stake store
 
 	validatorList := gm.sm.getValidators(100) // TODO: GetValidator list from staking module
 
 	for index, validator := range validatorList {
-		validatorGovInfo = ValidatorGovInfo{
+		validatorGovInfo := ValidatorGovInfo{
 			ProposalID:      proposal.ProposalID,
 			ValidatorAddr:   validator.address,
 			InitVotingPower: gm.sm.getVotingPower(validator), // TODO: Get voting power of each validator from staking module
@@ -199,56 +203,5 @@ func activateVotingPeriod(ctx sdk.Context, gm governanceMapper, proposal Proposa
 		proposal.ValidatorGovInfos = append(proposal.ValidatorGovInfos, validatorGovInfo)
 	}
 
-	gm.ProposalQueuePush(ctx, proposal)
-}
-
-func NewBeginBlocker(gm governanceMapper) sdk.BeginBlocker {
-	return func(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
-		proposal := gm.ProposalQueuePeek(ctx)
-		if proposal == nil {
-			return
-		}
-
-		// Don't want to do urgent for now
-
-		// // Urgent proposal accepted
-		// if proposal.Votes.YesVotes/proposal.InitTotalVotingPower >= 2/3 {
-		// 	gm.PopProposalQueue(ctx)
-		// 	refund(ctx, gm, proposalID, proposal)
-		// 	return checkProposal()
-		// }
-
-		// Proposal reached the end of the voting period
-		if ctx.BlockHeight() == proposal.VotingStartBlock+proposal.Procedure.VotingPeriod {
-			gm.ProposalQueuePop(ctx)
-
-			// Slash validators if not voted
-			for _, validatorGovInfo := range proposal.ValidatorGovInfos {
-				if validatorOption.LastVoteWeight < 0 {
-					// TODO: SLASH MWAHAHAHAHAHA
-				}
-			}
-
-			//Proposal was accepted
-			nonAbstainTotal := proposal.Votes.YesVotes + proposal.Votes.NoVotes + proposal.Votes.NoWithVetoVotes
-			if proposal.YesVotes/nonAbstainTotal > 0.5 && proposal.NoWithVetoVotes/nonAbstainTotal < 1/3 { // TODO: Deal with decimals
-
-				//  TODO:  Act upon accepting of proposal
-
-				// Refund deposits
-				for _, deposit := range proposal.Deposits {
-					gm.ck.AddCoins(ctx, deposit.Depositer, deposit.Amount)
-					if err != nil {
-						panic("should not happen")
-					}
-				}
-
-				// check next proposal recursively
-				return checkProposal()
-			}
-
-			//  TODO: Prune proposal
-		}
-		return abci.ResponseBeginBlock{}
-	}
+	gm.ProposalQueuePush(ctx, *proposal)
 }
