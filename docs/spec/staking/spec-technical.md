@@ -240,7 +240,7 @@ type TxDeclareCandidacy struct {
 ``` 
 declareCandidacy(tx TxDeclareCandidacy):
     // create and save the empty candidate
-    candidate = loadCandidate(store, tx.PubKey)
+    candidate = getCandidate(store, tx.PubKey)
     if candidate != nil then return 
    	
     candidate = NewCandidate(tx.PubKey)
@@ -251,7 +251,7 @@ declareCandidacy(tx TxDeclareCandidacy):
     candidate.ProposerRewardPool = Coin(0)  
     candidate.Description = tx.Description
    	
-    saveCandidate(store, candidate)
+    setCandidate(store, candidate)
    
     // move coins from the sender account to a (self-bond) delegator account
     // the candidate account and global shares are updated within here
@@ -275,12 +275,12 @@ type TxEditCandidacy struct {
  
 ```
 editCandidacy(tx TxEditCandidacy):
-    candidate = loadCandidate(store, tx.PubKey)
+    candidate = getCandidate(store, tx.PubKey)
     if candidate == nil or candidate.Status == Unbonded return 
     if tx.GovernancePubKey != nil then candidate.GovernancePubKey = tx.GovernancePubKey
     if tx.Commission >= 0 then candidate.Commission = tx.Commission
     if tx.Description != nil then candidate.Description = tx.Description
-    saveCandidate(store, candidate)
+    setCandidate(store, candidate)
     return
   ```
      	
@@ -303,7 +303,7 @@ type TxDelegate struct {
 
 ```
 delegate(tx TxDelegate):
-    candidate = loadCandidate(store, tx.PubKey)
+    candidate = getCandidate(store, tx.PubKey)
     if candidate == nil then return
 	return delegateWithCandidate(tx, candidate)
 
@@ -320,18 +320,18 @@ delegateWithCandidate(tx TxDelegate, candidate Candidate):
 	if err != nil then return 
 
 	// Get or create the delegator bond
-	bond = loadDelegatorBond(store, sender, tx.PubKey)
+	bond = getDelegatorBond(store, sender, tx.PubKey)
 	if bond == nil then 
 	    bond = DelegatorBond{tx.PubKey,rational.Zero, Coin(0), Coin(0)}
 	
 	issuedDelegatorShares = candidate.addTokens(tx.Amount, gs)
 	bond.Shares = bond.Shares.Add(issuedDelegatorShares)
 	
-	saveCandidate(store, candidate)
+	setCandidate(store, candidate)
 	
 	store.Set(GetDelegatorBondKey(sender, bond.PubKey), bond)
 	
-	saveGlobalState(store, gs)
+	setGlobalState(store, gs)
 	return 
 
 addTokens(amount int64, gs GlobalState, candidate Candidate):
@@ -377,7 +377,7 @@ type TxUnbond struct {
 unbond(tx TxUnbond):
 
 	// get delegator bond
-	bond = loadDelegatorBond(store, sender, tx.PubKey)
+	bond = getDelegatorBond(store, sender, tx.PubKey)
 	if bond == nil then return 
 
 	// subtract bond tokens from delegator bond
@@ -385,7 +385,7 @@ unbond(tx TxUnbond):
 	
 	bond.Shares = bond.Shares.Sub(ts.Shares)
 
-	candidate = loadCandidate(store, tx.PubKey)
+	candidate = getCandidate(store, tx.PubKey)
 	if candidate == nil return
 
 	revokeCandidacy = false
@@ -397,7 +397,7 @@ unbond(tx TxUnbond):
 		// remove the bond
 		removeDelegatorBond(store, sender, tx.PubKey)
 	else 
-	    saveDelegatorBond(store, sender, bond)
+	    setDelegatorBond(store, sender, bond)
 
 	// transfer coins back to account
 	if candidate.Status == Bonded then
@@ -425,15 +425,15 @@ unbond(tx TxUnbond):
 	if candidate.GlobalStakeShares.IsZero() then
 		removeCandidate(store, tx.PubKey)
 	else 
-		saveCandidate(store, candidate)
+		setCandidate(store, candidate)
 
-	saveGlobalState(store, gs)
+	setGlobalState(store, gs)
 	return 
 	
 removeDelegatorBond(candidate Candidate):
 
 	// first remove from the list of bonds
-	pks = loadDelegatorCandidates(store, sender)
+	pks = getDelegatorCandidates(store, sender)
 	for i, pk := range pks {
 		if candidate.Equals(pk) {
 			pks = append(pks[:i], pks[i+1:]...)
